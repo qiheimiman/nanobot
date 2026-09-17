@@ -12,6 +12,7 @@ interface ToolField {
     | "file_path"
     | "url"
     | "action"
+    | "prompt"
     | "key"
     | "label"
     | "name"
@@ -165,6 +166,7 @@ function safeFields(args: unknown): ToolField[] {
     "file_path",
     "url",
     "action",
+    "prompt",
     "key",
     "label",
     "name",
@@ -224,6 +226,8 @@ function activityLabel(
   switch (name) {
     case "generate_image":
       return statusCopy(status, "Generating image", "Generated image", "Could not generate image");
+    case "describe_image":
+      return statusCopy(status, "Analyzing image", "Analyzed image", "Could not analyze image");
     case "spawn":
       return statusCopy(status, "Delegating task", "Delegated task", "Could not delegate task");
     case "message":
@@ -281,6 +285,10 @@ function activityDetail(items: GenericToolRunItem[], family: ToolFamily, name: s
   if (family === "memory") return quote(fieldValue(trace, "query"));
 
   switch (name) {
+    case "describe_image":
+      // The prompt is the point of this trace: it shows what the running process
+      // (and therefore Settings → Image) actually sent with the image.
+      return quote(fieldValue(trace, "prompt"));
     case "spawn":
       return safeText(fieldValue(trace, "label"));
     case "message":

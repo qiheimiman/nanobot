@@ -19,6 +19,7 @@ from nanobot.providers.image_generation import (
     OllamaImageGenerationClient,
     OpenAIImageGenerationClient,
     OpenRouterImageGenerationClient,
+    SiliconFlowImageGenerationClient,
     StepFunImageGenerationClient,
     ZhipuImageGenerationClient,
 )
@@ -1949,3 +1950,153 @@ def test_image_provider_http_client_kwargs_include_explicit_proxy() -> None:
         "proxy": proxy,
         "trust_env": False,
     }
+
+
+# ---------------------------------------------------------------------------
+# SiliconFlow image generation tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_success() -> None:
+    fake = FakeClient(
+        FakeResponse({
+            "images": [{"url": "https://cdn.siliconflow.cn/img/abc.png"}],
+            "timings": {"inference": 0.5},
+            "seed": 42,
+        })
+    )
+    client = SiliconFlowImageGenerationClient(
+        api_key="sk-sf-test",
+        client=fake,  # type: ignore[arg-type]
+    )
+
+    result = await client.generate(prompt="a cat", model="FLUX.1-schnell")
+
+    assert len(result.images) == 1
+    assert result.images[0] == PNG_DATA_URL
+    assert fake.calls[0]["url"] == "https://api.siliconflow.cn/v1/images/generations"
+    body = fake.calls[0]["json"]
+    assert body["model"] == "FLUX.1-schnell"
+    assert body["prompt"] == "a cat"
+
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_requires_api_key() -> None:
+    client = SiliconFlowImageGenerationClient(api_key=None)
+
+    with pytest.raises(ImageGenerationError, match="API key"):
+        await client.generate(prompt="draw", model="FLUX.1-schnell")
+
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_extra_body_passthrough() -> None:
+    fake = FakeClient(
+        FakeResponse({
+            "images": [{"url": "https://cdn.siliconflow.cn/img/abc.png"}],
+        })
+    )
+    client = SiliconFlowImageGenerationClient(
+        api_key="sk-sf-test",
+        extra_body={"seed": 12345, "num_inference_steps": 30},
+        client=fake,  # type: ignore[arg-type]
+    )
+
+    await client.generate(prompt="a cat", model="FLUX.1-schnell")
+
+    body = fake.calls[0]["json"]
+    assert body["seed"] == 12345
+    assert body["num_inference_steps"] == 30
+
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_http_error() -> None:
+    fake = FakeClient(FakeResponse({"error": "invalid request"}, status_code=400))
+    client = SiliconFlowImageGenerationClient(
+        api_key="sk-sf-test",
+        client=fake,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(ImageGenerationError, match="failed"):
+        await client.generate(prompt="draw", model="FLUX.1-schnell")
+
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_returns_no_images() -> None:
+    fake = FakeClient(FakeResponse({"images": []}))
+    client = SiliconFlowImageGenerationClient(
+        api_key="sk-sf-test",
+        client=fake,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(ImageGenerationError, match="no images"):
+        await client.generate(prompt="draw", model="FLUX.1-schnell")
+
+
+@pytest.mark.parametrize(
+    ("aspect_ratio", "expected_size"),
+    [
+        ("1:1", "1024x1024"),
+        ("16:9", "1536x1024"),
+        ("9:16", "1024x1536"),
+        ("3:4", "960x1280"),
+        ("4:3", "1360x1024"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_aspect_ratio_mapping(
+    aspect_ratio: str,
+    expected_size: str,
+) -> None:
+    fake = FakeClient(
+        FakeResponse({
+            "images": [{"url": "https://cdn.siliconflow.cn/img/abc.png"}],
+        })
+    )
+    client = SiliconFlowImageGenerationClient(
+        api_key="sk-sf-test",
+        client=fake,  # type: ignore[arg-type]
+    )
+
+    await client.generate(
+        prompt="test",
+        model="FLUX.1-schnell",
+        aspect_ratio=aspect_ratio,
+    )
+
+    body = fake.calls[0]["json"]
+    assert body["image_size"] == expected_size
+
+
+@pytest.mark.asyncio
+async def test_siliconflow_image_generation_with_reference_images() -> None:
+    """Reference images are passed as JSON body fields: image, image2, image3."""
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+        f.write(PNG_BYTES)
+        ref_path = f.name
+
+    try:
+        fake = FakeClient(
+            FakeResponse({
+                "images": [{"url": "https://cdn.siliconflow.cn/img/result.png"}],
+            })
+        )
+        client = SiliconFlowImageGenerationClient(
+            api_key="sk-sf-test",
+            client=fake,  # type: ignore[arg-type]
+        )
+
+        await client.generate(
+            prompt="edit this image",
+            model="Qwen/Qwen-Image-Edit-2509",
+            reference_images=[ref_path],
+        )
+
+        # Still calls /images/generations (same endpoint, different body fields)
+        assert fake.calls[0]["url"] == "https://api.siliconflow.cn/v1/images/generations"
+        body = fake.calls[0]["json"]
+        # image field should be a base64 data URL
+        assert body["image"].startswith("data:image/png;base64,")
+    finally:
+        Path(ref_path).unlink(missing_ok=True)

@@ -1972,6 +1972,25 @@ Image generation is configured under `tools.imageGeneration` and uses credential
 
 See [Image Generation](./image-generation.md) for WebUI usage, provider examples, artifact storage, and troubleshooting.
 
+## Image Understanding
+
+Image understanding is configured under `tools.imageUnderstanding`. When enabled, images attached to a message are described by a dedicated vision model before the chat model sees them, and the `describe_image` tool becomes available for images referenced by path. It reuses credentials from `providers.<name>`.
+
+```json
+{
+  "tools": {
+    "imageUnderstanding": {
+      "enabled": true,
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "prompt": "描述这张图片"
+    }
+  }
+}
+```
+
+See [Image Understanding](./image-understanding.md) for WebUI usage, behavior, and troubleshooting.
+
 ## MCP (Model Context Protocol)
 
 > [!TIP]

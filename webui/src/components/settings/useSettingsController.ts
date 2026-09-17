@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { imageGenerationFormFromPayload } from "@/components/settings/capabilities/ImageGenerationSettings";
+import { imageUnderstandingFormFromPayload } from "@/components/settings/capabilities/ImageUnderstandingSettings";
 import {
   networkSafetyFormFromPayload,
   visibleWebuiDefaultAccessMode,
@@ -106,8 +107,9 @@ export function useSettingsController({
   } = modelState;
   const capabilityState = useCapabilitySettingsState(initialSettings);
   const {
-    imageGenerationForm, imageGenerationSaving, networkSafetyForm, networkSafetySaving,
-    setImageGenerationForm, setNetworkSafetyForm, setTranscriptionForm, setWebSearchForm,
+    imageGenerationForm, imageGenerationSaving, imageUnderstandingForm, imageUnderstandingSaving,
+    networkSafetyForm, networkSafetySaving,
+    setImageGenerationForm, setImageUnderstandingForm, setNetworkSafetyForm, setTranscriptionForm, setWebSearchForm,
     setWebSearchKeyEditing, setWebSearchKeyVisible, transcriptionForm,
     transcriptionSaving, webSearchForm, webSearchKeyEditing, webSearchKeyVisible,
     webSearchSaving,
@@ -161,6 +163,7 @@ export function useSettingsController({
       if (!options.preserveCapabilityForms) {
         setWebSearchForm((prev) => webSearchFormFromPayload(payload, prev));
         setImageGenerationForm(imageGenerationFormFromPayload(payload));
+        setImageUnderstandingForm(imageUnderstandingFormFromPayload(payload));
         setTranscriptionForm(transcriptionFormFromPayload(payload));
         setNetworkSafetyForm(networkSafetyFormFromPayload(payload));
       }
@@ -289,6 +292,17 @@ export function useSettingsController({
     );
   }, [imageGenerationForm, settings]);
 
+  const imageUnderstandingDirty = useMemo(() => {
+    if (!settings) return false;
+    const iu = settings.image_understanding;
+    return (
+      imageUnderstandingForm.enabled !== (iu?.enabled ?? false) ||
+      imageUnderstandingForm.provider !== (iu?.provider ?? "") ||
+      imageUnderstandingForm.model !== (iu?.model ?? "") ||
+      imageUnderstandingForm.prompt !== (iu?.prompt ?? "")
+    );
+  }, [imageUnderstandingForm, settings]);
+
   const transcriptionDirty = useMemo(() => {
     if (!settings) return false;
     const transcription = settings.transcription ?? DEFAULT_TRANSCRIPTION_SETTINGS;
@@ -412,6 +426,7 @@ export function useSettingsController({
     setPendingRestartSections,
     installCapabilities,
     imageGenerationDirty,
+    imageUnderstandingDirty,
     transcriptionDirty,
     networkSafetyDirty,
   });
@@ -434,6 +449,7 @@ export function useSettingsController({
     handleWebSearchProviderChange,
     resetWebSearchDraft,
     saveImageGenerationSettings,
+    saveImageUnderstandingSettings,
     saveNetworkSafetySettings,
     saveTranscriptionSettings,
     saveWebSearch,
@@ -441,6 +457,10 @@ export function useSettingsController({
   useAutoSave(imageGenerationForm, imageGenerationDirty, imageGenerationSaving, saveImageGenerationSettings,
     !imageGenerationForm.enabled || Boolean(settings?.image_generation.providers.find(
       (provider) => provider.name === imageGenerationForm.provider,
+    )?.configured));
+  useAutoSave(imageUnderstandingForm, imageUnderstandingDirty, imageUnderstandingSaving, saveImageUnderstandingSettings,
+    !imageUnderstandingForm.enabled || Boolean(settings?.image_understanding?.providers.find(
+      (provider) => provider.name === imageUnderstandingForm.provider,
     )?.configured));
   useAutoSave(transcriptionForm, transcriptionDirty, transcriptionSaving, saveTranscriptionSettings);
   const webDraft = settings ? webSearchDraftState(settings, webSearchForm) : null;
@@ -519,6 +539,9 @@ export function useSettingsController({
     imageGenerationDirty,
     imageGenerationForm,
     imageGenerationSaving,
+    imageUnderstandingDirty,
+    imageUnderstandingForm,
+    imageUnderstandingSaving,
     installCapabilities,
     loading,
     localPrefs,
@@ -564,6 +587,7 @@ export function useSettingsController({
     restartViaSettingsSurface,
     runProviderOAuth,
     saveImageGenerationSettings,
+    saveImageUnderstandingSettings,
     saveModelSettings,
     saveNetworkSafetySettings,
     saveProvider,
@@ -581,6 +605,7 @@ export function useSettingsController({
     setCustomMcpForm,
     setForm,
     setImageGenerationForm,
+    setImageUnderstandingForm,
     setLocalPrefs,
     setMcpConfigImport,
     setMcpError,

@@ -49,6 +49,24 @@ describe("generic tool activity semantics", () => {
     expect(describeRun('generate_image({"prompt":"private"})', status).label).toBe(label);
   });
 
+  it.each([
+    ["running", "Analyzing image"],
+    ["done", "Analyzed image"],
+    ["error", "Could not analyze image"],
+  ] as const)("uses human status copy for the automatic vision trace in %s", (status, label) => {
+    const line = 'describe_image({"image_paths": ["/tmp/shot.png"], "prompt": "count the shapes"})';
+    expect(describeRun(line, status).label).toBe(label);
+  });
+
+  it("shows the vision prompt from Settings without exposing the image path", () => {
+    const presentation = describeRun(
+      'describe_image({"image_paths": ["/Users/test/.nanobot/media/shot.png"], "prompt": "描述这张图片1"})',
+    );
+
+    expect(presentation.detail).toBe("“描述这张图片1”");
+    expect(JSON.stringify(presentation)).not.toContain("/Users/test");
+  });
+
   it("groups searches over collected sources without exposing absolute paths", () => {
     const first = parseGenericToolTrace(
       'grep({"pattern":"July","path":"/Users/test/.nanobot/tool-results/session/call_first.txt"})',

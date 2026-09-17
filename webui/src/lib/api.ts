@@ -9,6 +9,7 @@ import type {
   CliAppsPayload,
   FilePreviewPayload,
   ImageGenerationSettingsUpdate,
+  ImageUnderstandingSettingsUpdate,
   McpPresetsPayload,
   McpOAuthFlowPayload,
   MarketplaceProvider,
@@ -1090,6 +1091,22 @@ export async function updateImageGenerationSettings(
       default_aspect_ratio: update.defaultAspectRatio,
       default_image_size: update.defaultImageSize,
       max_images_per_turn: update.maxImagesPerTurn,
+    },
+  );
+}
+
+export async function updateImageUnderstandingSettings(
+  transport: WebUIMutationTransport,
+  update: ImageUnderstandingSettingsUpdate,
+): Promise<SettingsPayload> {
+  return mutation<SettingsPayload>(
+    transport,
+    "settings.image_understanding.update",
+    {
+      enabled: update.enabled,
+      provider: update.provider,
+      model: update.model,
+      prompt: update.prompt,
     },
   );
 }

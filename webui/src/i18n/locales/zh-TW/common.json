@@ -201,6 +201,7 @@
       "localPreferences": "瀏覽器偏好設定",
       "presets": "預設",
       "imageGeneration": "圖片生成",
+      "imageUnderstanding": "圖片理解",
       "imageDefaults": "預設值",
       "webSearch": "網路搜尋",
       "webBehavior": "網頁存取設定",
@@ -234,6 +235,7 @@
       "timeout": "搜尋逾時（秒）",
       "jinaReader": "Jina Reader",
       "imageGeneration": "圖片生成",
+      "imageUnderstanding": "圖片理解",
       "imageProvider": "圖片供應商",
       "imageProviderStatus": "供應商狀態",
       "imageProviderBase": "供應商位址",
@@ -277,7 +279,10 @@
       "timeout": "每次搜尋請求最長等待多久。",
       "jinaReader": "讀取網頁時，優先使用可用的 Jina Reader。",
       "imageGeneration": "設定圖片供應商後，即可在聊天中產生圖片。",
+      "imageUnderstanding": "使用視覺模型分析圖片，而非使用聊天模型處理圖片。",
       "imageProvider": "選擇用來產生圖片的供應商。",
+      "imageUnderstandingPrompt": "傳送給視覺模型的提示詞，用於圖片分析。",
+      "imageUnderstandingProviderStatus": "圖片理解重用「供應商」頁中已儲存的憑證。",
       "imageProviderStatus": "使用「供應商」中已儲存的憑證。",
       "imageModel": "傳送給所選圖片供應商的模型名稱。",
       "defaultAspectRatio": "提示詞未指定比例時使用。",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "搜尋或輸入模型 ID",
       "typeModelId": "輸入此供應商支援的模型 ID。",
       "configureProvider": "設定供應商",
-      "missingCredential": "啟用圖片生成功能前，請先設定此供應商。"
+      "missingCredential": "啟用圖片生成功能前，請先設定此供應商。",
+      "promptPlaceholder": "描述這張圖片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "選擇供應商",
+      "selectModel": "選擇視覺模型",
+      "promptPlaceholder": "描述這張圖片",
+      "missingCredential": "啟用圖片理解前請先設定此供應商。"
     },
     "capabilities": {
       "providerSupport": "供應商相依套件",

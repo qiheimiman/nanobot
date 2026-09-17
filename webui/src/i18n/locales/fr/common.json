@@ -201,6 +201,7 @@
       "localPreferences": "Préférences du navigateur",
       "presets": "Préréglages",
       "imageGeneration": "Génération d’images",
+      "imageUnderstanding": "Compréhension des images",
       "imageDefaults": "Valeurs par défaut",
       "webSearch": "Recherche web",
       "webBehavior": "Accès aux pages web",
@@ -234,6 +235,7 @@
       "timeout": "Délai d’attente",
       "jinaReader": "Lecteur Jina",
       "imageGeneration": "Génération d’images",
+      "imageUnderstanding": "Compréhension des images",
       "imageProvider": "Fournisseur d’images",
       "imageProviderStatus": "État du fournisseur",
       "imageProviderBase": "URL de base du fournisseur",
@@ -277,6 +279,9 @@
       "timeout": "Nombre de secondes avant l’expiration d’une requête de recherche.",
       "jinaReader": "Utilise Jina Reader pour lire les pages web lorsque le service est disponible.",
       "imageGeneration": "Permet à l’agent de générer des images dans les conversations lorsqu’un fournisseur est configuré.",
+      "imageUnderstanding": "Utilise un modèle de vision pour analyser les images à la place du modèle de conversation.",
+      "imageUnderstandingPrompt": "Invite envoyée au modèle de vision pour analyser l’image.",
+      "imageUnderstandingProviderStatus": "La compréhension des images réutilise les identifiants des fournisseurs.",
       "imageProvider": "Choisissez le fournisseur utilisé pour générer les images.",
       "imageProviderStatus": "La génération d’images réutilise les identifiants des fournisseurs.",
       "imageModel": "Nom du modèle envoyé au fournisseur d’images sélectionné.",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "Rechercher ou saisir l’ID du modèle",
       "typeModelId": "Saisissez l’ID de modèle pris en charge par ce fournisseur.",
       "configureProvider": "Configurer le fournisseur",
-      "missingCredential": "Configurez ce fournisseur avant d’activer la génération d’images."
+      "missingCredential": "Configurez ce fournisseur avant d’activer la génération d’images.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "Choisir un fournisseur",
+      "selectModel": "Choisir un modèle de vision",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "Configurez ce fournisseur avant d’activer la compréhension des images."
     },
     "capabilities": {
       "providerSupport": "Dépendances du fournisseur",

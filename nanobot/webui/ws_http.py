@@ -192,6 +192,7 @@ _WEBUI_MUTATION_PATHS = {
     "settings.api_service.start": "/api/settings/api-service/start",
     "settings.api_service.stop": "/api/settings/api-service/stop",
     "settings.image_generation.update": "/api/settings/image-generation/update",
+    "settings.image_understanding.update": "/api/settings/image-understanding/update",
     "settings.transcription.update": "/api/settings/transcription/update",
     "settings.runtime_config.update": "/api/settings/runtime-config/update",
     "settings.network_safety.update": "/api/settings/network-safety/update",

@@ -18,6 +18,7 @@ INBOUND_META_RUNTIME_CONTROL = "_runtime_control"
 INBOUND_META_USER_SHELL = "_user_shell"
 RUNTIME_CONTROL_ACK = "_ack"
 RUNTIME_CONTROL_IMAGE_GENERATION_RELOAD = "image_generation_reload"
+RUNTIME_CONTROL_IMAGE_UNDERSTANDING_RELOAD = "image_understanding_reload"
 RUNTIME_CONTROL_SESSION_DISCARD = "session_discard"
 
 

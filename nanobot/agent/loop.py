@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import json
 import os
 import time
 import weakref
@@ -50,6 +51,7 @@ from nanobot.agent.turn_delivery import TurnRoute as TurnRoute
 from nanobot.agent.turn_hooks import AgentTurnHookSpec, build_agent_turn_hook
 from nanobot.bus.events import INBOUND_META_USER_SHELL, InboundMessage, OutboundMessage
 from nanobot.bus.outbound_events import (
+    ProgressEvent,
     StreamDeltaEvent,
     StreamedResponseEvent,
     StreamEndEvent,
@@ -60,8 +62,19 @@ from nanobot.command.router import normalize_command_text
 from nanobot.config.schema import AgentDefaults, ModelPresetConfig
 from nanobot.events import NO_EVENTS, AgentEvent, EventSink
 from nanobot.llm_usage.context import source_from_request
-from nanobot.providers.base import LLMProvider, LLMUsage, ProviderConversationState
+from nanobot.providers.base import (
+    LLMProvider,
+    LLMUsage,
+    ProviderConversationState,
+)
 from nanobot.providers.factory import ProviderSnapshot
+from nanobot.providers.image_understanding import (
+    DEFAULT_VISION_PROMPT,
+    ImageDescription,
+    ImageUnderstandingError,
+    describe_images,
+    render_image_descriptions,
+)
 from nanobot.runtime_context import (
     RUNTIME_CONTEXT_HISTORY_META,
     RUNTIME_CONTEXT_MESSAGE_META,
@@ -102,9 +115,9 @@ from nanobot.session.summary import (
 from nanobot.triggers.local_turns import LocalTriggerTurnCoordinator
 from nanobot.utils.cancellation import task_is_cancelling
 from nanobot.utils.document import reference_non_image_attachments
-from nanobot.utils.helpers import image_placeholder_text
+from nanobot.utils.helpers import image_placeholder_text, truncate_text
 from nanobot.utils.llm_runtime import LLMRuntime
-from nanobot.utils.progress_events import output_events
+from nanobot.utils.progress_events import build_tool_event_payload, output_events
 from nanobot.utils.runtime import (
     EMPTY_FINAL_RESPONSE_MESSAGE,
 )
@@ -122,6 +135,33 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 _SUBAGENT_PROVIDER_TASK_META = "subagent_provider_task_id"
 _SUBAGENT_TERMINAL_WAIT_SECONDS = 300.0
+
+# Name reported in tool traces for the automatic vision request on an inbound image.
+_VISION_TOOL_NAME = "describe_image"
+
+
+_VISION_PROMPT_LOG_CHARS = 80
+
+# Appended to automatically described attachments so the chat model does not ask the
+# vision model for an image it can already read.
+_AUTO_DESCRIPTION_NOTE = (
+    "(the images above are already described; do not call describe_image for them)"
+)
+
+
+def _preview_text(text: str) -> str:
+    """Bound config-provided prompts in log lines."""
+    return truncate_text(text, _VISION_PROMPT_LOG_CHARS)
+
+
+def _vision_tool_hint(arguments: dict[str, Any]) -> str:
+    """Trace line for the automatic vision call.
+
+    It is rendered exactly like a tool call the model itself made
+    (``describe_image({...})``) so chat clients group the breadcrumb with its tool
+    event and show the effective prompt instead of a bare tool name.
+    """
+    return f"{_VISION_TOOL_NAME}({json.dumps(arguments, ensure_ascii=False)})"
 
 
 class TurnKind(Enum):
@@ -286,6 +326,7 @@ class AgentLoop:
         tools_config: ToolsConfig | None = None,
         image_generation_provider_config: ProviderConfig | None = None,
         image_generation_provider_configs: dict[str, ProviderConfig] | None = None,
+        image_understanding_provider_configs: dict[str, ProviderConfig] | None = None,
         provider_snapshot_loader: Callable[..., ProviderSnapshot] | None = None,
         provider_signature: tuple[object, ...] | None = None,
         model_presets: dict[str, ModelPresetConfig] | None = None,
@@ -360,6 +401,7 @@ class AgentLoop:
             and "openrouter" not in self._image_generation_provider_configs
         ):
             self._image_generation_provider_configs["openrouter"] = image_generation_provider_config
+        self._image_understanding_provider_configs = dict(image_understanding_provider_configs or {})
         self.cron_service = cron_service
         self.local_trigger_store = local_trigger_store
         self.restrict_to_workspace = restrict_to_workspace
@@ -631,6 +673,7 @@ class AgentLoop:
             sessions=self.sessions,
             provider_snapshot_loader=provider_snapshot_loader,
             image_generation_provider_configs=self._image_generation_provider_configs,
+            image_understanding_provider_configs=self._image_understanding_provider_configs,
             timezone=self.context.timezone or "UTC",
             workspace_sandbox=self.workspace_scopes.sandbox_status,
             runtime_control=AgentRuntimeControl(self),
@@ -997,6 +1040,13 @@ class AgentLoop:
                     content, image_paths = reference_non_image_attachments(
                         content,
                         image_paths,
+                    )
+                    # Descriptions replace native image blocks so a text-only
+                    # chat model can still answer about the image.
+                    content, image_paths = await self._replace_images_with_descriptions(
+                        content,
+                        image_paths,
+                        events=events,
                     )
                     image_paths = image_paths or None
                 user_content = self.context.build_user_content(
@@ -1745,16 +1795,158 @@ class AgentLoop:
             metadata=meta,
         )
 
+    async def _replace_images_with_descriptions(
+        self,
+        content: str,
+        image_paths: list[str],
+        *,
+        events: EventSink = NO_EVENTS,
+    ) -> tuple[str, list[str]]:
+        """Append vision descriptions for images the chat model must not see.
+
+        Returns the rewritten text plus the image paths that still have to reach
+        the chat model as native image blocks (vision disabled or failed).
+        """
+        if not image_paths:
+            return content, image_paths
+        descriptions, remaining = await self._describe_inbound_images(
+            image_paths,
+            events=events,
+        )
+        if not descriptions:
+            return content, image_paths
+        rendered = f"{render_image_descriptions(descriptions)}\n{_AUTO_DESCRIPTION_NOTE}"
+        text = f"{content}\n\n{rendered}" if content.strip() else rendered
+        return text, remaining
+
+    async def _emit_vision_activity(
+        self,
+        events: EventSink,
+        *,
+        phase: str,
+        call_id: str,
+        arguments: dict[str, Any],
+        result: str | None = None,
+        error: str | None = None,
+    ) -> None:
+        """Surface the automatic vision request as a tool trace in chat clients.
+
+        The vision request runs before the model call, so without this breadcrumb
+        the user sees a silent pause while images are being described.
+        """
+        if not events.accepts(ProgressEvent):
+            return
+        payload = build_tool_event_payload(
+            phase=phase,
+            call_id=call_id,
+            name=_VISION_TOOL_NAME,
+            arguments=arguments,
+            result=result,
+            error=error,
+        )
+        if phase == "start":
+            await events.emit(ProgressEvent(
+                content=_vision_tool_hint(arguments),
+                tool_hint=True,
+                tool_events=[payload],
+            ))
+            return
+        await events.emit(ProgressEvent(tool_events=[payload]))
+
+    async def _describe_inbound_images(
+        self,
+        image_paths: list[str],
+        *,
+        events: EventSink = NO_EVENTS,
+    ) -> tuple[list[ImageDescription], list[str]]:
+        """Describe inbound images with the configured vision model.
+
+        Returns the descriptions plus the paths the vision model did not cover, so
+        callers can fall back to native image blocks for those.
+        """
+        if not image_paths:
+            return [], []
+        config = getattr(self.tools_config, "image_understanding", None)
+        if config is None or not getattr(config, "enabled", False):
+            return [], list(image_paths)
+        provider_name = getattr(config, "provider", "") or ""
+        provider_config = self._image_understanding_provider_configs.get(provider_name)
+        if provider_config is None:
+            logger.info(
+                "Image understanding provider '{}' is not configured; "
+                "passing images to the chat model instead",
+                provider_name,
+            )
+            return [], list(image_paths)
+        call_id = f"image-understanding-{time.monotonic_ns()}"
+        effective_prompt = config.prompt or DEFAULT_VISION_PROMPT
+        # The prompt is part of the trace so users can confirm which one the
+        # running process actually used.
+        arguments: dict[str, Any] = {
+            "image_paths": [str(path) for path in image_paths],
+            "prompt": effective_prompt,
+        }
+        await self._emit_vision_activity(
+            events,
+            phase="start",
+            call_id=call_id,
+            arguments=arguments,
+        )
+        try:
+            descriptions = await describe_images(
+                image_paths,
+                provider_config=provider_config,
+                model=config.model,
+                prompt=effective_prompt,
+            )
+        except ImageUnderstandingError as exc:
+            await self._emit_vision_activity(
+                events,
+                phase="error",
+                call_id=call_id,
+                arguments=arguments,
+                error=str(exc),
+            )
+            logger.warning("Image understanding failed: {}", exc)
+            return [], list(image_paths)
+        described = {description.path for description in descriptions}
+        remaining = [path for path in image_paths if path not in described]
+        await self._emit_vision_activity(
+            events,
+            phase="end" if descriptions else "error",
+            call_id=call_id,
+            arguments=arguments,
+            result=(
+                f"described {len(descriptions)} image(s) with {config.model or provider_name}"
+                if descriptions
+                else None
+            ),
+            error=None if descriptions else "vision model returned no description",
+        )
+        if descriptions:
+            logger.info(
+                "Described {} image(s) with vision model '{}' using prompt {}",
+                len(descriptions),
+                provider_name,
+                _preview_text(effective_prompt),
+            )
+        return descriptions, remaining
+
     async def _restore_turn(self, ctx: TurnContext) -> None:
         """Restore checkpoint / pending user turn; reference non-image attachments."""
         msg = ctx.msg
 
         if ctx.kind is TurnKind.USER and msg.media:
-            new_content, image_paths = reference_non_image_attachments(
+            content, image_paths = reference_non_image_attachments(
                 msg.content,
                 msg.media,
             )
-            ctx.msg = dataclasses.replace(msg, content=new_content, media=image_paths)
+            content, image_paths = await self._replace_images_with_descriptions(
+                content,
+                image_paths,
+                events=ctx.events,
+            )
+            ctx.msg = dataclasses.replace(msg, content=content, media=image_paths)
             msg = ctx.msg
 
         if ctx.session is None:

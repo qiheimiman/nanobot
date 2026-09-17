@@ -12,6 +12,7 @@ from websockets.http11 import Request as WsRequest
 from websockets.http11 import Response
 
 from nanobot.agent.tools.image_generation import request_image_generation_reload
+from nanobot.agent.tools.image_understanding import request_image_understanding_reload
 from nanobot.agent.tools.mcp_oauth import MCP_OAUTH_CALLBACK_PATH
 from nanobot.api.runtime import ApiRuntime, api_runtime_paths
 from nanobot.bus.queue import MessageBus
@@ -50,6 +51,7 @@ from nanobot.webui.settings_api import (
     update_agent_settings,
     update_api_settings,
     update_image_generation_settings,
+    update_image_understanding_settings,
     update_model_call_order,
     update_model_configuration,
     update_network_safety_settings,
@@ -123,6 +125,7 @@ _CAPABILITY_ROUTES = {
     "/api/settings/api-service/start": "api-start",
     "/api/settings/api-service/stop": "api-stop",
     "/api/settings/image-generation/update": "image-update",
+    "/api/settings/image-understanding/update": "image-understanding-update",
     "/api/settings/transcription/update": "transcription-update",
     "/api/settings/network-safety/update": "network-update",
 }
@@ -167,6 +170,7 @@ _SETTINGS_MUTATION_PATHS = frozenset({
     "/api/settings/api-service/start",
     "/api/settings/api-service/stop",
     "/api/settings/image-generation/update",
+    "/api/settings/image-understanding/update",
     "/api/settings/transcription/update",
     "/api/settings/network-safety/update",
     "/api/settings/cli-apps/install",
@@ -301,7 +305,7 @@ class WebUISettingsRouter:
         domain, action = route
         restart_before = (
             await asyncio.to_thread(self._restart_values, action)
-            if action in {"runtime-config-update", "image-update", "web-search-update"}
+            if action in {"runtime-config-update", "image-update", "image-understanding-update", "web-search-update"}
             else None
         )
         domain_request = self._domain_request(
@@ -366,6 +370,8 @@ class WebUISettingsRouter:
             return runtime_config_payload(config)
         if action == "image-update":
             return config.tools.image_generation.model_dump(mode="json")
+        if action == "image-understanding-update":
+            return config.tools.image_understanding.model_dump(mode="json")
         return {"use_jina_reader": config.tools.web.fetch.use_jina_reader}
 
     @staticmethod
@@ -497,11 +503,13 @@ class WebUISettingsRouter:
             update_web_search=update_web_search_settings,
             update_api=update_api_settings,
             update_image=update_image_generation_settings,
+            update_image_understanding=update_image_understanding_settings,
             update_transcription=update_transcription_settings,
             update_network=update_network_safety_settings,
             nanobot_features_action=nanobot_features_action,
             api_runtime=self._api_runtime,
             reload_image=lambda: request_image_generation_reload(self.bus),
+            reload_image_understanding=lambda: request_image_understanding_reload(self.bus),
         )
 
     def _system_operations(self) -> system_domain.SystemSettingsOperations:

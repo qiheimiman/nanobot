@@ -5,7 +5,10 @@ import {
   webSearchProviderAcceptsApiKey,
   webSearchProviderRequiresApiKey,
 } from "@/components/settings/capabilities/WebSettings";
-import type { CapabilitySettingsState } from "@/components/settings/capabilities/useCapabilitySettingsState";
+import type {
+  CapabilityErrorSection,
+  CapabilitySettingsState,
+} from "@/components/settings/capabilities/useCapabilitySettingsState";
 import type {
   ApplySettingsPayload,
   MaybeRestartHostEngine,
@@ -13,6 +16,7 @@ import type {
 } from "@/components/settings/contracts";
 import {
   updateImageGenerationSettings,
+  updateImageUnderstandingSettings,
   updateNetworkSafetySettings,
   updateTranscriptionSettings,
   updateWebSearchSettings,
@@ -20,6 +24,7 @@ import {
 import type { NanobotClient } from "@/lib/nanobot-client";
 import type { SettingsPayload, WebSearchSettingsUpdate } from "@/lib/types";
 import { imageGenerationFormFromPayload } from "@/components/settings/capabilities/ImageGenerationSettings";
+import { imageUnderstandingFormFromPayload } from "@/components/settings/capabilities/ImageUnderstandingSettings";
 import { transcriptionFormFromPayload } from "@/components/settings/capabilities/TranscriptionSettings";
 import { networkSafetyFormFromPayload } from "@/components/settings/capabilities/SecuritySettings";
 
@@ -33,6 +38,7 @@ interface CapabilitySettingsActionsOptions {
   setPendingRestartSections: Dispatch<SetStateAction<PendingRestartSections>>;
   installCapabilities: (names: string[]) => Promise<boolean>;
   imageGenerationDirty: boolean;
+  imageUnderstandingDirty: boolean;
   transcriptionDirty: boolean;
   networkSafetyDirty: boolean;
 }
@@ -47,15 +53,19 @@ export function useCapabilitySettingsActions({
   setPendingRestartSections,
   installCapabilities,
   imageGenerationDirty,
+  imageUnderstandingDirty,
   transcriptionDirty,
   networkSafetyDirty,
 }: CapabilitySettingsActionsOptions) {
   const {
     imageGenerationForm,
     imageGenerationSaving,
+    imageUnderstandingForm,
+    imageUnderstandingSaving,
     networkSafetyForm,
     networkSafetySaving,
     setImageGenerationSaving,
+    setImageUnderstandingSaving,
     setNetworkSafetySaving,
     setTranscriptionSaving,
     setWebSearchForm,
@@ -68,7 +78,7 @@ export function useCapabilitySettingsActions({
     webSearchKeyEditing,
     webSearchSaving,
   } = state;
-  const setError = (section: "image" | "voice" | "web" | "safety", message?: string) =>
+  const setError = (section: CapabilityErrorSection, message?: string) =>
     state.setCapabilityErrors((prev) => ({ ...prev, [section]: message }));
 
   const saveImageGenerationSettings = async () => {
@@ -93,6 +103,31 @@ export function useCapabilitySettingsActions({
         ? t("settings.image.missingCredential") : message);
     } finally {
       setImageGenerationSaving(false);
+    }
+  };
+
+  const saveImageUnderstandingSettings = async () => {
+    if (!settings || !imageUnderstandingDirty || imageUnderstandingSaving) return;
+    if (imageUnderstandingForm.enabled && !settings.image_understanding?.providers.find(
+      (provider) => provider.name === imageUnderstandingForm.provider,
+    )?.configured) return;
+    setError("imageUnderstanding");
+    setImageUnderstandingSaving(true);
+    try {
+      const payload = await updateImageUnderstandingSettings(client, imageUnderstandingForm);
+      applyPayload(payload, { preserveCapabilityForms: true });
+      state.setImageUnderstandingForm(imageUnderstandingFormFromPayload(payload));
+      if (!payload.restart_required_sections && payload.requires_restart) {
+        setPendingRestartSections((prev) => ({ ...prev, image: true }));
+      }
+      await maybeRestartHostEngine(payload);
+      setError("imageUnderstanding");
+    } catch (err) {
+      const message = (err as Error).message;
+      setError("imageUnderstanding", message === "image understanding provider is not configured"
+        ? t("settings.imageUnderstanding.missingCredential") : message);
+    } finally {
+      setImageUnderstandingSaving(false);
     }
   };
 
@@ -230,6 +265,7 @@ export function useCapabilitySettingsActions({
     handleWebSearchProviderChange,
     resetWebSearchDraft,
     saveImageGenerationSettings,
+    saveImageUnderstandingSettings,
     saveNetworkSafetySettings,
     saveTranscriptionSettings,
     saveWebSearch,
