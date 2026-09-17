@@ -201,6 +201,7 @@
       "localPreferences": "Tùy chọn trình duyệt",
       "presets": "Cấu hình đặt trước",
       "imageGeneration": "Tạo hình ảnh",
+      "imageUnderstanding": "Hiểu hình ảnh",
       "imageDefaults": "Mặc định",
       "webSearch": "Tìm kiếm web",
       "webBehavior": "Truy cập trang web",
@@ -234,6 +235,7 @@
       "timeout": "Thời gian chờ",
       "jinaReader": "Jina Reader",
       "imageGeneration": "Tạo hình ảnh",
+      "imageUnderstanding": "Hiểu hình ảnh",
       "imageProvider": "Nhà cung cấp hình ảnh",
       "imageProviderStatus": "Trạng thái nhà cung cấp",
       "imageProviderBase": "URL cơ sở của nhà cung cấp",
@@ -277,6 +279,9 @@
       "timeout": "Số giây trước khi yêu cầu của nhà cung cấp tìm kiếm hết thời gian.",
       "jinaReader": "Dùng Jina Reader để đọc nội dung trang web khi dịch vụ khả dụng.",
       "imageGeneration": "Cho phép tác nhân tạo ảnh trong cuộc trò chuyện khi đã cấu hình nhà cung cấp.",
+      "imageUnderstanding": "Dùng mô hình thị giác để phân tích hình ảnh thay cho mô hình trò chuyện.",
+      "imageUnderstandingPrompt": "Câu lệnh gửi cho mô hình thị giác để phân tích hình ảnh.",
+      "imageUnderstandingProviderStatus": "Tính năng hiểu hình ảnh dùng lại thông tin xác thực từ mục Nhà cung cấp.",
       "imageProvider": "Chọn nhà cung cấp dùng để tạo ảnh.",
       "imageProviderStatus": "Tạo ảnh dùng lại thông tin xác thực từ mục Nhà cung cấp.",
       "imageModel": "Tên mô hình gửi tới nhà cung cấp ảnh đã chọn.",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "Tìm kiếm hoặc nhập ID mô hình",
       "typeModelId": "Nhập ID mô hình được nhà cung cấp này hỗ trợ.",
       "configureProvider": "Cấu hình nhà cung cấp",
-      "missingCredential": "Cấu hình nhà cung cấp này trước khi bật tạo ảnh."
+      "missingCredential": "Cấu hình nhà cung cấp này trước khi bật tạo ảnh.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "Chọn nhà cung cấp",
+      "selectModel": "Chọn mô hình thị giác",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "Cấu hình nhà cung cấp này trước khi bật tính năng hiểu hình ảnh."
     },
     "capabilities": {
       "providerSupport": "Gói cần thiết cho nhà cung cấp",

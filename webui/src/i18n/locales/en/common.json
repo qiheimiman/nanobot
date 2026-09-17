@@ -387,6 +387,7 @@
       "localPreferences": "Local preferences",
       "presets": "Presets",
       "imageGeneration": "Image generation",
+      "imageUnderstanding": "Image understanding",
       "imageDefaults": "Defaults",
       "webSearch": "Web search",
       "webBehavior": "Behavior",
@@ -477,6 +478,7 @@
       "timeout": "Timeout",
       "jinaReader": "Jina reader",
       "imageGeneration": "Image generation",
+      "imageUnderstanding": "Image understanding",
       "imageProvider": "Image provider",
       "imageProviderStatus": "Provider status",
       "imageProviderBase": "Provider URL",
@@ -522,7 +524,10 @@
       "timeout": "How long to wait for a search request to finish.",
       "jinaReader": "Use Jina Reader to read web pages when available.",
       "imageGeneration": "Generate images in chat after setting up an image provider.",
+      "imageUnderstanding": "Use a vision model to analyze images instead of the chat model.",
       "imageProvider": "Choose the provider used to generate images.",
+      "imageUnderstandingPrompt": "Prompt sent to the vision model for image analysis.",
+      "imageUnderstandingProviderStatus": "Image understanding reuses provider credentials from Providers.",
       "imageProviderStatus": "Image generation reuses provider credentials from Providers.",
       "imageModel": "Choose a model supported by the selected image provider.",
       "defaultAspectRatio": "Used when the request does not specify an aspect ratio.",
@@ -914,7 +919,14 @@
       "searchOrTypeModel": "Search or type model ID",
       "typeModelId": "Type the model ID supported by this provider.",
       "configureProvider": "Configure provider",
-      "missingCredential": "Configure this provider before enabling image generation."
+      "missingCredential": "Configure this provider before enabling image generation.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "Select provider",
+      "selectModel": "Select vision model",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "Configure this provider before enabling image understanding."
     },
     "capabilities": {
       "providerSupport": "Provider dependencies",

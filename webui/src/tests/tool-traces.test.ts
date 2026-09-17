@@ -28,6 +28,21 @@ describe("tool trace identity", () => {
     });
   });
 
+  it("matches the automatic vision hint with its tool event", () => {
+    // nanobot/agent/loop.py publishes the hint as json.dumps(arguments), the tool
+    // event carries the same arguments; the activity trace only groups them when
+    // both canonicalize to the same line.
+    const hint = 'describe_image({"image_paths": ["/tmp/shot.png"], "prompt": "描述这张图片"})';
+    const event = {
+      phase: "start",
+      name: "describe_image",
+      arguments: { image_paths: ["/tmp/shot.png"], prompt: "描述这张图片" },
+    };
+    const eventLine = `describe_image(${JSON.stringify(event.arguments)})`;
+
+    expect(canonicalToolTrace(hint)).toBe(canonicalToolTrace(eventLine));
+  });
+
   it("replaces an empty streaming placeholder when hosted search arguments arrive", () => {
     expect(mergeToolProgressTraceLines(
       ["web_search()"],

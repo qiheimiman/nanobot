@@ -201,6 +201,7 @@
       "localPreferences": "Preferensi browser",
       "presets": "Prasetel",
       "imageGeneration": "Pembuatan gambar",
+      "imageUnderstanding": "Pemahaman gambar",
       "imageDefaults": "Bawaan",
       "webSearch": "Pencarian web",
       "webBehavior": "Akses halaman web",
@@ -234,6 +235,7 @@
       "timeout": "Batas waktu",
       "jinaReader": "Jina Reader",
       "imageGeneration": "Pembuatan gambar",
+      "imageUnderstanding": "Pemahaman gambar",
       "imageProvider": "Penyedia gambar",
       "imageProviderStatus": "Status penyedia",
       "imageProviderBase": "URL dasar penyedia",
@@ -277,6 +279,9 @@
       "timeout": "Detik sebelum permintaan penyedia pencarian mencapai batas waktu.",
       "jinaReader": "Menggunakan Jina Reader untuk membaca halaman web jika tersedia.",
       "imageGeneration": "Mengizinkan agen membuat gambar dalam percakapan jika penyedia sudah dikonfigurasi.",
+      "imageUnderstanding": "Gunakan model visi untuk menganalisis gambar, bukan model percakapan.",
+      "imageUnderstandingPrompt": "Prompt yang dikirim ke model visi untuk menganalisis gambar.",
+      "imageUnderstandingProviderStatus": "Pemahaman gambar menggunakan kembali kredensial penyedia dari bagian Penyedia.",
       "imageProvider": "Pilih penyedia yang digunakan untuk membuat gambar.",
       "imageProviderStatus": "Pembuatan gambar menggunakan kembali kredensial penyedia dari bagian Penyedia.",
       "imageModel": "Nama model yang dikirim ke penyedia gambar yang dipilih.",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "Cari atau ketik ID model",
       "typeModelId": "Ketik ID model yang didukung penyedia ini.",
       "configureProvider": "Konfigurasi penyedia",
-      "missingCredential": "Konfigurasikan penyedia ini sebelum mengaktifkan pembuatan gambar."
+      "missingCredential": "Konfigurasikan penyedia ini sebelum mengaktifkan pembuatan gambar.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "Pilih penyedia",
+      "selectModel": "Pilih model visi",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "Konfigurasikan penyedia ini sebelum mengaktifkan pemahaman gambar."
     },
     "capabilities": {
       "providerSupport": "Dependensi penyedia",

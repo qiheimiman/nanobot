@@ -88,18 +88,43 @@ def _tool_event_arguments(tool_call: Any) -> dict[str, Any]:
     return cast(dict[str, Any], arguments) if isinstance(arguments, dict) else {}
 
 
-def build_tool_event_start_payload(tool_call: Any) -> dict[str, Any]:
+def build_tool_event_payload(
+    *,
+    phase: str,
+    call_id: str,
+    name: str,
+    arguments: dict[str, Any] | None = None,
+    result: Any = None,
+    error: str | None = None,
+    files: list[Any] | None = None,
+    embeds: list[Any] | None = None,
+) -> dict[str, Any]:
+    """Build one tool-event payload for a call the runner did not execute.
+
+    Callers outside the runner (for example the automatic vision request on an
+    inbound image) still describe their work with the same wire shape so chat
+    clients render a familiar tool trace.
+    """
     return {
         "version": 1,
-        "phase": "start",
-        "call_id": str(getattr(tool_call, "id", "") or ""),
-        "name": getattr(tool_call, "name", ""),
-        "arguments": _tool_event_arguments(tool_call),
-        "result": None,
-        "error": None,
-        "files": [],
-        "embeds": [],
+        "phase": phase,
+        "call_id": call_id,
+        "name": name,
+        "arguments": arguments or {},
+        "result": result,
+        "error": error,
+        "files": files or [],
+        "embeds": embeds or [],
     }
+
+
+def build_tool_event_start_payload(tool_call: Any) -> dict[str, Any]:
+    return build_tool_event_payload(
+        phase="start",
+        call_id=str(getattr(tool_call, "id", "") or ""),
+        name=getattr(tool_call, "name", ""),
+        arguments=_tool_event_arguments(tool_call),
+    )
 
 
 def tool_event_result_extras(result: Any) -> tuple[list[Any], list[Any]]:

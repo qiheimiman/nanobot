@@ -9,6 +9,7 @@ export type SettingsSectionKey =
   | "models"
   | "capabilities"
   | "image"
+  | "imageUnderstanding"
   | "voice"
   | "browser"
   | "channels"
@@ -20,7 +21,7 @@ export type SettingsSectionKey =
   | "advanced";
 
 export function isCapabilitySection(section: SettingsSectionKey): boolean {
-  return ["capabilities", "image", "voice", "browser", "memory"].includes(section);
+  return ["capabilities", "image", "imageUnderstanding", "voice", "browser", "memory"].includes(section);
 }
 
 type PendingRestartSection = "runtime" | "browser" | "image";

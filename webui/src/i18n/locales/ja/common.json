@@ -201,6 +201,7 @@
       "localPreferences": "このブラウザーの設定",
       "presets": "プリセット",
       "imageGeneration": "画像生成",
+      "imageUnderstanding": "画像理解",
       "imageDefaults": "既定値",
       "webSearch": "ウェブ検索",
       "webBehavior": "ウェブページの取得",
@@ -234,6 +235,7 @@
       "timeout": "タイムアウト",
       "jinaReader": "Jina Reader",
       "imageGeneration": "画像生成",
+      "imageUnderstanding": "画像理解",
       "imageProvider": "画像プロバイダー",
       "imageProviderStatus": "プロバイダー状態",
       "imageProviderBase": "プロバイダー URL",
@@ -277,6 +279,9 @@
       "timeout": "検索プロバイダーのリクエストがタイムアウトするまでの秒数です。",
       "jinaReader": "利用可能な場合、Jina Reader でウェブページの内容を取得します。",
       "imageGeneration": "画像プロバイダーを設定すると、エージェントがチャットで画像を生成できるようになります。",
+      "imageUnderstanding": "チャットモデルの代わりに視覚モデルで画像を解析します。",
+      "imageUnderstandingPrompt": "画像解析のために視覚モデルへ送信するプロンプトです。",
+      "imageUnderstandingProviderStatus": "画像理解はプロバイダー設定の認証情報を再利用します。",
       "imageProvider": "画像生成に使用するプロバイダーを選択します。",
       "imageProviderStatus": "画像生成はプロバイダー設定の認証情報を再利用します。",
       "imageModel": "選択した画像プロバイダーへ送信するモデル名です。",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "モデル ID を検索または入力",
       "typeModelId": "このプロバイダーが対応するモデル ID を入力してください。",
       "configureProvider": "プロバイダーを設定",
-      "missingCredential": "画像生成を有効にする前に、このプロバイダーを設定してください。"
+      "missingCredential": "画像生成を有効にする前に、このプロバイダーを設定してください。",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "プロバイダーを選択",
+      "selectModel": "視覚モデルを選択",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "画像理解を有効にする前に、このプロバイダーを設定してください。"
     },
     "capabilities": {
       "providerSupport": "プロバイダーの依存パッケージ",

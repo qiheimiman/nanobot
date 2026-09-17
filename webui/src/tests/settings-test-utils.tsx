@@ -83,6 +83,14 @@ export function settingsPayload(): SettingsPayload {
       save_dir: "generated",
       providers: [],
     },
+    image_understanding: {
+      enabled: false,
+      provider: "deepseek",
+      provider_configured: false,
+      model: "deepseek-flash",
+      prompt: "描述这张图片",
+      providers: [{ name: "deepseek", label: "DeepSeek", configured: false }],
+    },
     runtime: {
       config_path: "/tmp/config.json",
       workspace_path: "/tmp/workspace",

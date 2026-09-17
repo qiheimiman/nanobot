@@ -451,6 +451,22 @@ def update_image_generation_settings(
     return settings_payload(requires_restart=changed, config_path=config_path)
 
 
+def update_image_understanding_settings(
+    query: QueryParams,
+    *,
+    config_path: Path | None = None,
+) -> dict[str, Any]:
+    config = _load_settings_config(config_path)
+    changed = capabilities.update_image_understanding_settings(
+        config,
+        query,
+        oauth_status=_oauth_provider_status,
+    )
+    if changed:
+        _save_settings_config(config, config_path)
+    return settings_payload(requires_restart=changed, config_path=config_path)
+
+
 def update_transcription_settings(
     query: QueryParams,
     *,

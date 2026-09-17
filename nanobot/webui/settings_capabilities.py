@@ -56,11 +56,13 @@ class CapabilitySettingsOperations:
     update_web_search: SettingsOperation
     update_api: SettingsOperation
     update_image: SettingsOperation
+    update_image_understanding: SettingsOperation
     update_transcription: SettingsOperation
     update_network: SettingsOperation
     nanobot_features_action: SettingsOperation
     api_runtime: Callable[[], ApiRuntime]
     reload_image: Callable[[], Awaitable[dict[str, Any]]]
+    reload_image_understanding: Callable[[], Awaitable[dict[str, Any]]]
 
 
 class CapabilitySettingsPayload(TypedDict):
@@ -69,6 +71,7 @@ class CapabilitySettingsPayload(TypedDict):
     api: dict[str, Any]
     observability: dict[str, Any]
     image_generation: dict[str, Any]
+    image_understanding: dict[str, Any]
     transcription: dict[str, Any]
 
 
@@ -120,6 +123,38 @@ def _image_generation_provider_rows(
                     if image_provider and image_provider.model_options
                     else None
                 ),
+            }
+        )
+    return rows
+
+
+def _image_understanding_provider_rows(
+    config: Config,
+    *,
+    oauth_status: OAuthStatusReader,
+) -> list[dict[str, Any]]:
+    """Return provider rows for image understanding (vision-capable LLM providers)."""
+    from nanobot.providers.registry import PROVIDERS
+
+    rows: list[dict[str, Any]] = []
+    for spec in PROVIDERS:
+        name = spec.name
+        provider_config = getattr(config.providers, name, None)
+        configured = (
+            provider_configured_for_settings(spec, provider_config, oauth_status)
+            if provider_config is not None
+            else False
+        )
+        rows.append(
+            {
+                "name": name,
+                "label": spec.label if spec.label else name,
+                "configured": configured,
+                "auth_type": "oauth" if spec.is_oauth else "api_key",
+                "api_key_hint": mask_secret_hint(getattr(provider_config, "api_key", None) if provider_config else None),
+                "api_base": getattr(provider_config, "api_base", None) if provider_config else None,
+                "default_api_base": spec.default_api_base,
+                "models": [],
             }
         )
     return rows
@@ -215,6 +250,14 @@ def capability_settings_payload(
             "max_images_per_turn": image_config.max_images_per_turn,
             "save_dir": image_config.save_dir,
             "providers": image_providers,
+        },
+        "image_understanding": {
+            "enabled": config.tools.image_understanding.enabled,
+            "provider": config.tools.image_understanding.provider,
+            "provider_configured": False,  # Determined per-provider in UI
+            "model": config.tools.image_understanding.model,
+            "prompt": config.tools.image_understanding.prompt,
+            "providers": _image_understanding_provider_rows(config, oauth_status=oauth_status),
         },
         "transcription": {
             "enabled": transcription.enabled,
@@ -497,6 +540,64 @@ def update_image_generation_settings(
     return changed
 
 
+def update_image_understanding_settings(
+    config: Config,
+    query: QueryParams,
+    *,
+    oauth_status: OAuthStatusReader,
+) -> bool:
+    """Update the image understanding (vision) configuration."""
+    iu_config = config.tools.image_understanding
+    changed = False
+
+    enabled = query_first(query, "enabled")
+    if enabled is not None:
+        parsed_enabled = parse_bool(enabled, "enabled")
+        if iu_config.enabled != parsed_enabled:
+            iu_config.enabled = parsed_enabled
+            changed = True
+
+    provider_name = query_first(query, "provider")
+    if provider_name is not None:
+        provider_name = provider_name.strip().lower()
+        if not provider_name:
+            raise WebUISettingsError("provider is required for image understanding")
+        if iu_config.provider != provider_name:
+            iu_config.provider = provider_name
+            changed = True
+
+    model = query_first(query, "model")
+    if model is not None:
+        model = model.strip()
+        if not model:
+            raise WebUISettingsError("model is required for image understanding")
+        if len(model) > 200:
+            raise WebUISettingsError("model name is too long")
+        if iu_config.model != model:
+            iu_config.model = model
+            changed = True
+
+    prompt = query_first(query, "prompt")
+    if prompt is not None:
+        prompt = prompt.strip()
+        if iu_config.prompt != prompt:
+            iu_config.prompt = prompt
+            changed = True
+
+    if iu_config.enabled:
+        spec = find_by_name(iu_config.provider)
+        provider_config = getattr(config.providers, iu_config.provider, None)
+        configured = (
+            provider_configured_for_settings(spec, provider_config, oauth_status)
+            if spec is not None and provider_config is not None
+            else False
+        )
+        if not configured:
+            raise WebUISettingsError("image understanding provider is not configured")
+
+    return changed
+
+
 def update_transcription_settings(config: Config, query: QueryParams) -> bool:
     transcription = config.transcription
     changed = False
@@ -651,44 +752,48 @@ class CapabilitySettingsHandler:
             "web-search-update": (
                 operations.update_web_search,
                 "browser",
-                False,
+                None,
             ),
             "transcription-update": (
                 operations.update_transcription,
                 None,
-                False,
+                None,
             ),
             "network-update": (
                 operations.update_network,
                 "runtime",
-                False,
+                None,
             ),
             "image-update": (
                 operations.update_image,
                 "image",
-                True,
+                operations.reload_image,
+            ),
+            "image-understanding-update": (
+                operations.update_image_understanding,
+                "image",
+                operations.reload_image_understanding,
             ),
         }.get(action)
         if mutation is None:
             return SettingsRouteResult.failure(404, "unknown settings action")
 
-        operation, section, apply_image_reload = mutation
+        operation, section, reload_runtime = mutation
         try:
             payload = self.settings.mutate(operation, request.query)
         except WebUISettingsError as exc:
             return SettingsRouteResult.failure(exc.status, exc.message)
-        if apply_image_reload:
-            payload, image_restart_cleared = await self.apply_image_runtime_change(
+        applied = False
+        if reload_runtime is not None:
+            payload, applied = await self.apply_image_runtime_change(
                 payload,
-                operations.reload_image,
+                reload_runtime,
             )
-        else:
-            image_restart_cleared = False
         return SettingsRouteResult.success(
             payload,
             decorate_restart=True,
             restart_section=section,
-            clear_restart_section=("image" if image_restart_cleared else None),
+            clear_restart_section=(section if applied else None),
         )
 
     async def apply_image_runtime_change(

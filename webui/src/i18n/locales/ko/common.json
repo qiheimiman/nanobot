@@ -201,6 +201,7 @@
       "localPreferences": "이 브라우저의 설정",
       "presets": "프리셋",
       "imageGeneration": "이미지 생성",
+      "imageUnderstanding": "이미지 이해",
       "imageDefaults": "기본값",
       "webSearch": "웹 검색",
       "webBehavior": "웹 페이지 접근",
@@ -234,6 +235,7 @@
       "timeout": "제한 시간",
       "jinaReader": "Jina Reader",
       "imageGeneration": "이미지 생성",
+      "imageUnderstanding": "이미지 이해",
       "imageProvider": "이미지 제공업체",
       "imageProviderStatus": "제공업체 상태",
       "imageProviderBase": "제공업체 주소",
@@ -277,6 +279,9 @@
       "timeout": "검색 요청의 응답을 기다릴 최대 시간(초)입니다.",
       "jinaReader": "사용 가능한 경우 Jina Reader로 웹 페이지 내용을 가져옵니다.",
       "imageGeneration": "이미지 제공업체를 설정하면 에이전트가 채팅에서 이미지를 생성할 수 있습니다.",
+      "imageUnderstanding": "채팅 모델 대신 비전 모델로 이미지를 분석합니다.",
+      "imageUnderstandingPrompt": "이미지 분석을 위해 비전 모델로 보내는 프롬프트입니다.",
+      "imageUnderstandingProviderStatus": "이미지 이해는 제공업체 설정의 인증 정보를 재사용합니다.",
       "imageProvider": "이미지 생성에 사용할 제공업체를 선택합니다.",
       "imageProviderStatus": "이미지 생성은 제공업체 인증 정보을 재사용합니다.",
       "imageModel": "선택한 이미지 제공업체에 보낼 모델 이름입니다.",
@@ -503,7 +508,14 @@
       "searchOrTypeModel": "모델 ID 검색 또는 입력",
       "typeModelId": "이 제공업체가 지원하는 모델 ID를 입력하세요.",
       "configureProvider": "제공업체 설정",
-      "missingCredential": "이미지 생성을 활성화하기 전에 이 제공업체를 설정하세요."
+      "missingCredential": "이미지 생성을 활성화하기 전에 이 제공업체를 설정하세요.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "제공업체 선택",
+      "selectModel": "비전 모델 선택",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "이미지 이해를 활성화하기 전에 이 제공업체를 설정하세요."
     },
     "capabilities": {
       "providerSupport": "제공업체 필수 패키지",

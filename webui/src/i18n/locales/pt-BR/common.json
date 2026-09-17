@@ -201,6 +201,7 @@
       "localPreferences": "Preferências do navegador",
       "presets": "Predefinições",
       "imageGeneration": "Geração de imagens",
+      "imageUnderstanding": "Compreensão de imagens",
       "imageDefaults": "Padrões",
       "webSearch": "Busca na web",
       "webBehavior": "Acesso a páginas web",
@@ -291,6 +292,7 @@
       "timeout": "Tempo limite",
       "jinaReader": "Leitor Jina",
       "imageGeneration": "Geração de imagens",
+      "imageUnderstanding": "Compreensão de imagens",
       "imageProvider": "Provedor de imagem",
       "imageProviderStatus": "Status do provedor",
       "imageProviderBase": "URL base do provedor",
@@ -336,6 +338,9 @@
       "timeout": "Segundos antes de uma requisição de busca expirar.",
       "jinaReader": "Usa o Jina Reader para ler páginas web quando disponível.",
       "imageGeneration": "Permite que o agente gere imagens nas conversas quando há um provedor configurado.",
+      "imageUnderstanding": "Use um modelo de visão para analisar imagens em vez do modelo de conversa.",
+      "imageUnderstandingPrompt": "Prompt enviado ao modelo de visão para analisar a imagem.",
+      "imageUnderstandingProviderStatus": "A compreensão de imagens reaproveita as credenciais dos provedores.",
       "imageProvider": "Escolha o provedor usado para gerar imagens.",
       "imageProviderStatus": "A geração de imagens reaproveita as credenciais dos provedores.",
       "imageModel": "Nome do modelo enviado ao provedor de imagem selecionado.",
@@ -728,7 +733,14 @@
       "searchOrTypeModel": "Pesquisar ou digitar ID do modelo",
       "typeModelId": "Digite o ID de modelo compatível com este provedor.",
       "configureProvider": "Configurar provedor",
-      "missingCredential": "Configure o provedor antes de habilitar a geração de imagens."
+      "missingCredential": "Configure o provedor antes de habilitar a geração de imagens.",
+      "promptPlaceholder": "描述这张图片"
+    },
+    "imageUnderstanding": {
+      "selectProvider": "Selecionar provedor",
+      "selectModel": "Selecionar modelo de visão",
+      "promptPlaceholder": "描述这张图片",
+      "missingCredential": "Configure este provedor antes de ativar a compreensão de imagens."
     },
     "capabilities": {
       "providerSupport": "Dependências do provedor",

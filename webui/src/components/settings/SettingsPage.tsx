@@ -8,6 +8,7 @@ import { SettingsFeature } from "@/components/settings/shared/SettingsFeature";
 
 import { SkillsCatalogSettings } from "@/components/settings/SkillsCatalogSettings";
 import { ImageGenerationSettings } from "@/components/settings/capabilities/ImageGenerationSettings";
+import { ImageUnderstandingSettings } from "@/components/settings/capabilities/ImageUnderstandingSettings";
 import { AdvancedSettings } from "@/components/settings/capabilities/SecuritySettings";
 import { TranscriptionSettings } from "@/components/settings/capabilities/TranscriptionSettings";
 import { WebSettings } from "@/components/settings/capabilities/WebSettings";
@@ -138,6 +139,9 @@ export function SettingsPage({
     imageGenerationDirty,
     imageGenerationForm,
     imageGenerationSaving,
+    imageUnderstandingDirty,
+    imageUnderstandingForm,
+    imageUnderstandingSaving,
     installCapabilities,
     loading,
     localPrefs,
@@ -183,6 +187,7 @@ export function SettingsPage({
     restartViaSettingsSurface,
     runProviderOAuth,
     saveImageGenerationSettings,
+    saveImageUnderstandingSettings,
     saveModelSettings,
     saveNetworkSafetySettings,
     saveProvider,
@@ -200,6 +205,7 @@ export function SettingsPage({
     setCustomMcpForm,
     setForm,
     setImageGenerationForm,
+    setImageUnderstandingForm,
     setLocalPrefs,
     setMcpConfigImport,
     setMcpError,
@@ -294,6 +300,13 @@ export function SettingsPage({
               disabled={restartInProgress || imageGenerationSaving} initialOpen={activeSection === "image"}
               onChange={(enabled) => setImageGenerationForm((prev) => ({ ...prev, enabled }))}>
               {renderSection("image", true)}
+            </SettingsFeature>
+            <SettingsFeature title={t("settings.rows.imageUnderstanding")} enabled={imageUnderstandingForm.enabled}
+              error={imageUnderstandingForm.enabled && !settings.image_understanding?.providers.find((provider) => provider.name === imageUnderstandingForm.provider)?.configured
+                ? t("settings.imageUnderstanding.missingCredential") : controller.capabilityErrors.imageUnderstanding}
+              disabled={restartInProgress || imageUnderstandingSaving} initialOpen={activeSection === "imageUnderstanding"}
+              onChange={(enabled) => setImageUnderstandingForm((prev) => ({ ...prev, enabled }))}>
+              {renderSection("imageUnderstanding", true)}
             </SettingsFeature>
             <SettingsFeature title={t("settings.rows.transcription")} enabled={transcriptionForm.enabled}
               error={controller.capabilityErrors.voice}
@@ -427,6 +440,27 @@ export function SettingsPage({
             >
               {imageGenerationForm.enabled ? runtimeConfiguration("image") : null}
             </ImageGenerationSettings>
+          </div>
+        );
+      case "imageUnderstanding":
+        return (
+          <div className="settings-stack">
+            <ImageUnderstandingSettings
+              error={controller.capabilityErrors.imageUnderstanding}
+              embedded={embedded}
+              token={token}
+              settings={settings}
+              form={imageUnderstandingForm}
+              dirty={imageUnderstandingDirty}
+              saving={imageUnderstandingSaving}
+              onChangeForm={setImageUnderstandingForm}
+              onSave={saveImageUnderstandingSettings}
+              onOpenProviders={() => selectSection("models")}
+              showBrandLogos={localPrefs.brandLogos}
+              onRestart={restartViaSettingsSurface}
+              isRestarting={restartInProgress}
+              requiresRestartPending={pendingRestartSections.image}
+            />
           </div>
         );
       case "voice":

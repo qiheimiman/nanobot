@@ -714,6 +714,23 @@ export interface SettingsPayload {
       default_model?: string | null;
     }>;
   };
+  image_understanding?: {
+    enabled: boolean;
+    provider: string;
+    provider_configured: boolean;
+    model: string;
+    prompt: string;
+    providers: Array<{
+      name: string;
+      label: string;
+      configured: boolean;
+      auth_type?: "api_key" | "oauth";
+      api_key_hint?: string | null;
+      api_base?: string | null;
+      default_api_base?: string | null;
+      models?: string[];
+    }>;
+  };
   transcription?: {
     enabled: boolean;
     provider: string;
@@ -1287,6 +1304,13 @@ export interface ImageGenerationSettingsUpdate {
   defaultAspectRatio: string;
   defaultImageSize: string;
   maxImagesPerTurn: number;
+}
+
+export interface ImageUnderstandingSettingsUpdate {
+  enabled: boolean;
+  provider: string;
+  model: string;
+  prompt: string;
 }
 
 export interface TranscriptionSettingsUpdate {

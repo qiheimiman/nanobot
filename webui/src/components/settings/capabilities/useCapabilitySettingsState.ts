@@ -5,6 +5,10 @@ import {
   imageGenerationFormFromPayload,
 } from "@/components/settings/capabilities/ImageGenerationSettings";
 import {
+  DEFAULT_IMAGE_UNDERSTANDING_FORM,
+  imageUnderstandingFormFromPayload,
+} from "@/components/settings/capabilities/ImageUnderstandingSettings";
+import {
   DEFAULT_NETWORK_SAFETY_FORM,
   networkSafetyFormFromPayload,
 } from "@/components/settings/capabilities/SecuritySettings";
@@ -18,16 +22,20 @@ import {
 } from "@/components/settings/capabilities/WebSettings";
 import type {
   ImageGenerationSettingsUpdate,
+  ImageUnderstandingSettingsUpdate,
   NetworkSafetySettingsUpdate,
   SettingsPayload,
   TranscriptionSettingsUpdate,
   WebSearchSettingsUpdate,
 } from "@/lib/types";
 
+export type CapabilityErrorSection = "image" | "imageUnderstanding" | "voice" | "web" | "safety";
+
 export function useCapabilitySettingsState(initialSettings: SettingsPayload | null) {
-  const [capabilityErrors, setCapabilityErrors] = useState<Partial<Record<"image" | "voice" | "web" | "safety", string>>>({});
+  const [capabilityErrors, setCapabilityErrors] = useState<Partial<Record<CapabilityErrorSection, string>>>({});
   const [webSearchSaving, setWebSearchSaving] = useState(false);
   const [imageGenerationSaving, setImageGenerationSaving] = useState(false);
+  const [imageUnderstandingSaving, setImageUnderstandingSaving] = useState(false);
   const [transcriptionSaving, setTranscriptionSaving] = useState(false);
   const [networkSafetySaving, setNetworkSafetySaving] = useState(false);
   const [webSearchForm, setWebSearchForm] = useState<WebSearchSettingsUpdate>(() =>
@@ -37,6 +45,11 @@ export function useCapabilitySettingsState(initialSettings: SettingsPayload | nu
     () => initialSettings
       ? imageGenerationFormFromPayload(initialSettings)
       : DEFAULT_IMAGE_GENERATION_FORM,
+  );
+  const [imageUnderstandingForm, setImageUnderstandingForm] = useState<ImageUnderstandingSettingsUpdate>(
+    () => initialSettings
+      ? imageUnderstandingFormFromPayload(initialSettings)
+      : DEFAULT_IMAGE_UNDERSTANDING_FORM,
   );
   const [transcriptionForm, setTranscriptionForm] = useState<TranscriptionSettingsUpdate>(
     () => initialSettings ? transcriptionFormFromPayload(initialSettings) : DEFAULT_TRANSCRIPTION_FORM,
@@ -52,10 +65,14 @@ export function useCapabilitySettingsState(initialSettings: SettingsPayload | nu
     setCapabilityErrors,
     imageGenerationForm,
     imageGenerationSaving,
+    imageUnderstandingForm,
+    imageUnderstandingSaving,
     networkSafetyForm,
     networkSafetySaving,
     setImageGenerationForm,
     setImageGenerationSaving,
+    setImageUnderstandingForm,
+    setImageUnderstandingSaving,
     setNetworkSafetyForm,
     setNetworkSafetySaving,
     setTranscriptionForm,

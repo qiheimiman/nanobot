@@ -1782,6 +1782,139 @@ def _stepfun_images_from_payload(payload: dict[str, Any]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# SiliconFlow (硅基流动) image generation
+# ---------------------------------------------------------------------------
+
+_SILICONFLOW_TIMEOUT_S = 120.0
+
+_SILICONFLOW_ASPECT_RATIO_SIZES: dict[str, str] = {
+    "1:1": "1024x1024",
+    "16:9": "1536x1024",
+    "9:16": "1024x1536",
+    "3:4": "960x1280",
+    "4:3": "1360x1024",
+}
+
+
+class SiliconFlowImageGenerationClient(ImageGenerationProvider):
+    """Async client for SiliconFlow (硅基流动) image generation.
+
+    SiliconFlow image generation API at POST /v1/images/generations supports:
+    - Text-to-image: ``prompt`` + ``image_size``
+    - Reference-image-guided: ``prompt`` + ``image`` (+ optional ``image2``, ``image3``)
+
+    Response contains ``images[].url`` which is downloaded and re-encoded as
+    base64 data URLs (URLs expire after 1 hour per API docs).
+    """
+
+    provider_name = "siliconflow"
+    model_options = ("Kwai-Kolors/Kolors", "Qwen/Qwen-Image-Edit-2509")
+    missing_key_message = (
+        "SiliconFlow API key is not configured. Set providers.siliconflow.apiKey."
+    )
+    default_timeout = _SILICONFLOW_TIMEOUT_S
+
+    def _default_base_url(self) -> str:
+        return "https://api.siliconflow.cn/v1"
+
+    async def generate(
+        self,
+        *,
+        prompt: str,
+        model: str,
+        reference_images: list[str] | None = None,
+        aspect_ratio: str | None = None,
+        image_size: str | None = None,
+    ) -> GeneratedImageResponse:
+        if not self.api_key:
+            raise ImageGenerationError(self.missing_key_message)
+
+        refs = list(reference_images or [])
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            **self.extra_headers,
+        }
+
+        body: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+        }
+
+        # image_size: widthxheight string (required per docs; omit only if
+        # the model does not support it — handled by extraBody override).
+        size = _siliconflow_size(aspect_ratio, image_size)
+        if size:
+            body["image_size"] = size
+
+        # Reference images are passed as JSON body fields: image, image2, image3.
+        # Values can be base64 data URLs or direct URLs.
+        if refs:
+            body["image"] = image_path_to_data_url(refs[0])
+            if len(refs) > 1:
+                body["image2"] = image_path_to_data_url(refs[1])
+            if len(refs) > 2:
+                body["image3"] = image_path_to_data_url(refs[2])
+
+        body.update(self.extra_body)
+        body = {k: v for k, v in body.items() if v is not None}
+
+        response = await self._http_post(
+            f"{self.api_base}/images/generations",
+            headers=headers,
+            body=body,
+        )
+
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            detail = response.text[:500]
+            raise ImageGenerationError(
+                f"SiliconFlow image generation failed: {detail}"
+            ) from exc
+
+        payload = response.json()
+        images = await _siliconflow_images_from_payload(payload, proxy=self.proxy)
+
+        self._require_images(images, payload)
+
+        return GeneratedImageResponse(images=images, content="", raw=payload)
+
+
+def _siliconflow_size(
+    aspect_ratio: str | None,
+    image_size: str | None,
+) -> str:
+    """Resolve aspect ratio / image_size to SiliconFlow image_size string."""
+    if image_size and "x" in image_size.lower():
+        return image_size
+    if aspect_ratio and aspect_ratio in _SILICONFLOW_ASPECT_RATIO_SIZES:
+        return _SILICONFLOW_ASPECT_RATIO_SIZES[aspect_ratio]
+    return "1024x1024"
+
+
+async def _siliconflow_images_from_payload(
+    payload: dict[str, Any],
+    *,
+    proxy: str | None = None,
+) -> list[str]:
+    """Extract images from SiliconFlow API response.
+
+    SiliconFlow returns ``images[].url`` (temporary URLs, expire after 1 hour).
+    We download and re-encode as base64 data URLs.
+    """
+    images: list[str] = []
+    for item in _as_json_objects(payload.get("images")):
+        url = item.get("url")
+        if isinstance(url, str) and url:
+            if url.startswith("data:image/"):
+                images.append(url)
+            else:
+                images.append(await _download_image_data_url(url, proxy=proxy))
+    return images
+
+
+# ---------------------------------------------------------------------------
 # Zhipu (智谱) image generation
 # ---------------------------------------------------------------------------
 
@@ -2120,10 +2253,11 @@ register_image_gen_provider(AIHubMixImageGenerationClient)
 register_image_gen_provider(CodexImageGenerationClient)
 register_image_gen_provider(CustomImageGenerationClient)
 register_image_gen_provider(GeminiImageGenerationClient)
-register_image_gen_provider(OllamaImageGenerationClient)
 register_image_gen_provider(MiniMaxImageGenerationClient)
+register_image_gen_provider(ModelScopeImageGenerationClient)
+register_image_gen_provider(OllamaImageGenerationClient)
 register_image_gen_provider(OpenAIImageGenerationClient)
 register_image_gen_provider(OpenRouterImageGenerationClient)
+register_image_gen_provider(SiliconFlowImageGenerationClient)
 register_image_gen_provider(StepFunImageGenerationClient)
 register_image_gen_provider(ZhipuImageGenerationClient)
-register_image_gen_provider(ModelScopeImageGenerationClient)
